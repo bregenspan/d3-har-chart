@@ -11,9 +11,7 @@
 
 var EventEmitter = require('events').EventEmitter,
     inherits = require('inherits'),
-	objectAssign = require('object-assign');
-
-var defaultOptions, chartContainer, providers;
+    objectAssign = require('object-assign');
 
 /**
  * Constructs a HAR chart
@@ -26,84 +24,86 @@ var defaultOptions, chartContainer, providers;
  * @param {Number} [options.itemHeight=10] - number of SVG units to size vertical bar height
  * @param {Number} [options.itemMargin=2] - number of SVG units by which to vertically space out bars
  */
-function D3HarChart (element, options) {
-	
-	EventEmitter.call(this);
+function D3HarChart(element, options) {
+    var defaultOptions;
 
-	var defaultOptions = {
+    EventEmitter.call(this);
 
-		firstPartyHosts: [],
+    defaultOptions = {
 
-		providers: {
-			adobeAudienceManager: ['demdex.net'],
-			amazon: ['amazon-adsystem.com'],
-			chartbeat: ['chartbeat.com', 'chartbeat.net'],
-			comscore: ['scorecardresearch.com'],
-			criteo: ['criteo.com'],
-			ghostery: ['betrad.com'],
-			google: ['googletagservices.com', 'googleadservices.com', 'googlesyndication.com', 'doubleclick.net', '2mdn.net'],
-			googleAnalytics: ['google-analytics.com'],
-			integral: ['adsafeprotected.com', 'iasds01.com'],
-			krux: ['krxd.net', 'krux.com'],
-			moat: ['moatads.com'],
-			nielsen: ['imrworldwide.com'],
-			quantcast: ['quantserve.com'],
-			researchNow: ['researchnow.com'],
-			skimlinks: ['skimresources.com']
-		},
+        firstPartyHosts: [],
 
-		providerGroups: {
-			'ads': [
-				'adobeAudienceManager',
-				'amazon',
-				'ghostery',
-				'google',
-				'integral',
-				'moat',
-				'researchNow',
-				'skimlinks'
-			],
-			'analytics': [
-				'cheartbeat',
-				'comscore',
-				'googleAnalytics',
-				'quantcast',
-				'nielsen'
-			]
-		},
+        providers: {
+            adobeAudienceManager: ['demdex.net'],
+            amazon: ['amazon-adsystem.com'],
+            chartbeat: ['chartbeat.com', 'chartbeat.net'],
+            comscore: ['scorecardresearch.com'],
+            criteo: ['criteo.com'],
+            ghostery: ['betrad.com'],
+            google: ['googletagservices.com', 'googleadservices.com', 'googlesyndication.com', 'doubleclick.net', '2mdn.net'],
+            googleAnalytics: ['google-analytics.com'],
+            integral: ['adsafeprotected.com', 'iasds01.com'],
+            krux: ['krxd.net', 'krux.com'],
+            moat: ['moatads.com'],
+            nielsen: ['imrworldwide.com'],
+            quantcast: ['quantserve.com'],
+            researchNow: ['researchnow.com'],
+            skimlinks: ['skimresources.com']
+        },
 
-		// Custom tags that should be added to files matching the specified regexes or filter functions
-		fileTags: {
-			scriptLoader: /require\.js/i,
-			mainScript: /javascripts\-min\/layer\/.*\.js$/i,
-			firstParty: function (item) {
-				return Boolean(item.domain.match(this.firstPartyRegex));
-			},
-			stats: function (item) {
-				return (item.domain.match(this.firstPartyRegex) && item.path.indexOf('/stats/') === 0);
-			}
-		},
+        providerGroups: {
+            'ads': [
+                'adobeAudienceManager',
+                'amazon',
+                'ghostery',
+                'google',
+                'integral',
+                'moat',
+                'researchNow',
+                'skimlinks'
+            ],
+            'analytics': [
+                'cheartbeat',
+                'comscore',
+                'googleAnalytics',
+                'quantcast',
+                'nielsen'
+            ]
+        },
 
-		itemHeight: 10,  // item height, in SVG coordinate units
-		itemMargin: 2   // margin between items, in SVG coordinate units
-	};
+        // Custom tags that should be added to files matching the specified regexes or filter functions
+        fileTags: {
+            scriptLoader: /require\.js/i,
+            mainScript: /javascripts\-min\/layer\/.*\.js$/i,
+            firstParty: function (item) {
+                return Boolean(item.domain.match(this.firstPartyRegex));
+            },
+            stats: function (item) {
+                return (item.domain.match(this.firstPartyRegex) && item.path.indexOf('/stats/') === 0);
+            }
+        },
 
-	this.element = element;
-	this.options = objectAssign({}, defaultOptions, options);
-	this.firstPartyRegex = D3HarChart.arrayToDomainRegex(this.options.firstPartyHosts);
+        itemHeight: 10,  // item height, in SVG coordinate units
+        itemMargin: 2   // margin between items, in SVG coordinate units
+    };
 
-	this.addTooltip();
+    this.element = element;
+    this.options = objectAssign({}, defaultOptions, options);
+    this.firstPartyRegex = D3HarChart.arrayToDomainRegex(this.options.firstPartyHosts);
+
+    this.addTooltip();
 }
 inherits(D3HarChart, EventEmitter);
 
 D3HarChart.prototype.addTooltip = function () {
+    var tooltip;
 
     function msToRoundedS(ms) {
         var seconds = ms / 1000;
         return (Math.round(seconds * 100) / 100) + 's';
     }
 
-	// Get display-friendly string representing list of providers for entry
+    // Get display-friendly string representing list of providers for entry
     function getProvidersDisplayName(providers) {
         return Object.keys(providers).filter(function (providerName) {
             return Boolean(providers[providerName]);
@@ -113,31 +113,31 @@ D3HarChart.prototype.addTooltip = function () {
         }).join(' / ');
     }
 
-	var tooltip = d3.select(this.element).append('div')
+    tooltip = d3.select(this.element).append('div')
         .style('opacity', 0)
         .attr('class', 'tooltip');
 
-	this.on('itemSelected', function (element, data) {
-		var provider =  getProvidersDisplayName(data.providers);
-		element.classList.add('selected');
-		tooltip
-			.html('<p>' + data.url + '</p>' +
-				  (provider ? '<p>Provider: ' + provider + '</p>' : '') +
-				'<p>' +
-					'Start: ' + msToRoundedS(data.start) + ' / ' +
-					'End: ' + msToRoundedS(data.end) +
-					' (' + msToRoundedS(data.duration) + ')' +
-				'</p>'
-			)
-			.style('opacity', 1);
-	});
+    this.on('itemSelected', function (element, data) {
+        var provider =  getProvidersDisplayName(data.providers);
+        element.classList.add('selected');
+        tooltip
+            .html('<p>' + data.url + '</p>' +
+                  (provider ? '<p>Provider: ' + provider + '</p>' : '') +
+                '<p>' +
+                    'Start: ' + msToRoundedS(data.start) + ' / ' +
+                    'End: ' + msToRoundedS(data.end) +
+                    ' (' + msToRoundedS(data.duration) + ')' +
+                '</p>'
+            )
+            .style('opacity', 1);
+    });
 
-	this.on('itemDeselected', function (element, data) {
-		element.classList.remove('selected');
-		tooltip
-			.html('')
-			.style('opacity', 0);
-	});
+    this.on('itemDeselected', function (element) {
+        element.classList.remove('selected');
+        tooltip
+            .html('')
+            .style('opacity', 0);
+    });
 
 };
 
@@ -146,7 +146,7 @@ D3HarChart.prototype.addTooltip = function () {
  * @param {array[string]} domains
  * @returns {RegExp}
  */
-D3HarChart.arrayToDomainRegex = function(domains) {
+D3HarChart.arrayToDomainRegex = function (domains) {
     return new RegExp('(' + domains.join('|').replace(/\./g, '\\.') + ')$');
 };
 
@@ -159,9 +159,9 @@ D3HarChart.arrayToDomainRegex = function(domains) {
  *                             that should be zoomed.
  * @param {number} [margin] - optional margin to leave around the zoomed area (as value from 0-1)
  */
-D3HarChart.prototype.zoomToElements = function(selection, filter, margin) {
+D3HarChart.prototype.zoomToElements = function (selection, filter, margin) {
     var data = selection.data(),
-		config = this.options,
+        config = this.options,
         filtered, filteredMax, max;
 
     margin = margin || 0;
@@ -206,8 +206,8 @@ D3HarChart.prototype.zoomToElements = function(selection, filter, margin) {
     window.document.getElementsByTagName('svg')[0].style.transform = '' +
         'scaleX(' + (max.x / filteredMax.x) + ') ' +
         'scaleY(' + (max.y / filteredMax.y) + ')';
-        // still rather blurry for me in Chrome...
-        //'scale3d(' + (max.x / filteredMax.x) + ', ' + (max.y / filteredMax.y) + ', 1.0)';
+    // still rather blurry for me in Chrome...
+    //'scale3d(' + (max.x / filteredMax.x) + ', ' + (max.y / filteredMax.y) + ', 1.0)';
 };
 
 
@@ -217,8 +217,8 @@ D3HarChart.prototype.zoomToElements = function(selection, filter, margin) {
  */
 D3HarChart.prototype.displayObject = function (harObject) {
     var config = this.options,
-		instance = this,
-		data, last, totalHeight, svg, div, bars, tooltip;
+        instance = this,
+        data, last, totalHeight, svg, bars;
 
     data = this.getRequestsFromHar(harObject);
 
@@ -229,10 +229,10 @@ D3HarChart.prototype.displayObject = function (harObject) {
         .attr('viewBox', '0 0 ' + last.end + ' ' + totalHeight)
         .attr('preserveAspectRatio', 'none');
 
-	// Replace camel-cased state name with hyphenated lowercase classname
-	function toClassName(state) {
-		return state.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
-	}
+    // Replace camel-cased state name with hyphenated lowercase classname
+    function toClassName(state) {
+        return state.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+    }
 
     bars = svg.selectAll('rect')
         .data(data)
@@ -249,7 +249,7 @@ D3HarChart.prototype.displayObject = function (harObject) {
         .attr('width', function (d) {
             return d.duration;
         })
-        .attr('height', function (d) {
+        .attr('height', function () {
             return config.itemHeight;
         })
         .attr('title', function (d) {
@@ -271,10 +271,10 @@ D3HarChart.prototype.displayObject = function (harObject) {
             }.bind(this));
         })
         .on('mouseover', function (d) {
-			instance.emit('itemSelected', this, d);
+            instance.emit('itemSelected', this, d);
         })
         .on('mouseout', function (d) {
-			instance.emit('itemDeselected', this, d);
+            instance.emit('itemDeselected', this, d);
         });
 };
 
@@ -290,10 +290,10 @@ D3HarChart.prototype.displayObject = function (harObject) {
  *  - {number} start - request start time (ms)
  *  - {number} end - request end time (ms)
  */
-D3HarChart.prototype.getRequestsFromHar = function(harData) {
+D3HarChart.prototype.getRequestsFromHar = function (harData) {
     var config = this.options,
-		instance = this,
-		harLog = harData.log,
+        instance = this,
+        harLog = harData.log,
         startDate = new Date(harLog.pages[0].startedDateTime),
         onLoad = harLog.pages[0].pageTimings.onLoad,
         items = [];

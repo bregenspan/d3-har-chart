@@ -1,0 +1,6 @@
+{
+	"preset": "crockford",
+	"validateIndentation": 4,
+	"disallowDanglingUnderscores": null,
+	"requireLineFeedAtFileEnd": null
+}
