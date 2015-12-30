@@ -1,0 +1,22 @@
+{
+  "name": "d3-har-chart",
+  "version": "1.0.0",
+  "description": "Render HAR charts via D3",
+  "main": "d3-har-chart.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "browserify index.js --s D3HarChart > dist/d3-har-chart.js",
+    "build-min": "browserify index.js --s D3HarChart | uglifyjs -c > dist/d3-har-chart.min.js",
+    "watch": "watchify index.js --s D3HarChart -o dist/d3-har-chart.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "browserify": "^12.0.1",
+    "events": "^1.1.0",
+    "inherits": "^2.0.1",
+    "object-assign": "^4.0.1",
+    "uglify-js": "^2.6.1",
+    "watchify": "^3.6.1"
+  }
+}
