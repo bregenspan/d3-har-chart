@@ -150,16 +150,19 @@ D3HarChart.arrayToDomainRegex = function (domains) {
 };
 
 /**
- * Given an array matching currently-displayed request data, zoom
- * our chart to the smallest bounding box of elements matching
- * the specified filter function.
- * @param {d3.Selection} selection - D3 element selection
+ * Given a filter function, zoom chart to the smallest bounding box of displayed
+ * items matching the filter function.
+ *
+ * NOTE: currently the bounding box's top and left coordinates always match the chart
+ * top and left coordinates; zoom only hides trailing items that don't match the filter,
+ * not leading ones.
+ *
  * @param {function} [filter] - function to use for filtering to elements
  *                             that should be zoomed.
  * @param {number} [margin] - optional margin to leave around the zoomed area (as value from 0-1)
  */
-D3HarChart.prototype.zoomToElements = function (selection, filter, margin) {
-    var data = selection.data(),
+D3HarChart.prototype.zoomToItems = function (filter, margin) {
+    var data = this.items.data(),
         config = this.options,
         filtered, filteredMax, max;
 
@@ -217,23 +220,23 @@ D3HarChart.prototype.zoomToElements = function (selection, filter, margin) {
 D3HarChart.prototype.displayObject = function (harObject) {
     var config = this.options,
         instance = this,
-        data, last, totalHeight, svg, bars;
+        data, last, totalHeight;
 
     data = this.getRequestsFromHar(harObject);
 
     last = data[data.length - 1];
     totalHeight = (config.itemHeight + config.itemMargin) * data.length;
 
-    svg = d3.select(this.element).append('svg')
+    this.chartEl = d3.select(this.element).append('svg')
         .attr('viewBox', '0 0 ' + last.end + ' ' + totalHeight)
         .attr('preserveAspectRatio', 'none');
 
-    // Replace camel-cased state name with hyphenated lowercase classname
+    // Replace camel-cased name with hyphenated lowercase classname
     function toClassName(state) {
         return state.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
     }
 
-    bars = svg.selectAll('rect')
+    this.items = this.chartEl.selectAll('rect')
         .data(data)
         .enter().append('rect')
         .attr('id', function (d, i) {
@@ -393,11 +396,15 @@ D3HarChart.prototype.getRequestsFromHar = function (harData) {
 /**
  * Visualizes the HAR data from the specified path
  * @param {String} harPath - path to HAR file
+ * @param {Function} [callback] - optional callback
  */
-D3HarChart.prototype.displayFile = function (harPath) {
+D3HarChart.prototype.displayFile = function (harPath, callback) {
     d3.json(harPath, function (error, data) {
         if (data) {
             this.displayObject(data);
+            callback(this);
+        } else {
+            console.error(error);  // FIXME: this is not the best error handling...
         }
     }.bind(this));
 };
